@@ -1125,6 +1125,10 @@ contract LIONDAO is ERC1155, EIP2981, Ownable  {
     function uri(uint256 _tokenId) override public view returns (string memory) {
         return string(abi.encodePacked(ERC1155.uri(_tokenId), _tokenId.toString(),".json"));
     }
+    
+    function totalSupply() public view returns(uint256) {
+        return maxTotalSupply;
+    }
   
     function changeRoyaltyRecipient(address _newRecipient) public onlyOwner {
         require(_newRecipient != address(0), "Error: new recipient is the zero address");
