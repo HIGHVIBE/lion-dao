@@ -1110,7 +1110,7 @@ contract LIONDAO is ERC1155, EIP2981, Ownable  {
     uint256 public currentSupply = 0;
     uint256 public maxTotalSupply = 111;
 
-    constructor(address _royaltyRecipient, uint256 _royaltyAmount) EIP2981(_royaltyRecipient, _royaltyAmount) ERC1155("ipfs://Qmby3RRduz1RnSSTVCXbQZM81kAhVvQCRS2uarATtq8hZF/") Ownable() {}
+    constructor(address _royaltyRecipient, uint256 _royaltyAmount) EIP2981(_royaltyRecipient, _royaltyAmount) ERC1155("ipfs://link/") Ownable() {}
 
    
     function supportsInterface(bytes4 _interfaceId) public view virtual override(ERC1155, EIP2981) returns (bool) {
