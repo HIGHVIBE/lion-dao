@@ -47,8 +47,8 @@ contract PaymentSplitter is Context {
     }
 
     
-    function payee(uint256 index) public view returns (address) {
-        return _payees[index];
+    function getPayees() public view returns (address[] memory) {
+        return _payees;
     }
 
     function release() private{
