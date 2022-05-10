@@ -668,9 +668,9 @@ contract GENERATIVE is ERC721A, EIP2981, Ownable {
     string baseURI;
     string nestURI;
     uint256 public maxTotalSupply = 3333;
-    uint256 public whitelistCost = 0.0555 ether;
-    uint256 public preSaleCost = 0.0888 ether;
-    uint256 public publicSaleCost = 0.111 ether;
+    uint256 public whitelistCost = 0.0000555 ether;
+    uint256 public preSaleCost = 0.0000888 ether;
+    uint256 public publicSaleCost = 0.000111 ether;
     bool public paused = false;
     bool public revealed = false;
     string public notRevealedUri;
@@ -720,7 +720,8 @@ contract GENERATIVE is ERC721A, EIP2981, Ownable {
     if(revealed == false) {
         return notRevealedUri;
     }
-    if(countDaysPassed(tokenId) >= 30) {
+    uint256 dayCount = countDaysPassed(tokenId);
+    if(dayCount >= 30) {
         string memory currentBaseURI = _nestURI();
         return bytes(currentBaseURI).length > 0
         ? string(abi.encodePacked(currentBaseURI, tokenId.toString(), ".json"))
@@ -760,10 +761,8 @@ contract GENERATIVE is ERC721A, EIP2981, Ownable {
             require(msg.value >= publicSaleCost * _mintAmount, "Not enough ETH sent: check public price.");
         }
     }
-
-    for (uint256 i = 1; i <= _mintAmount; i++) {
       _safeMint(msg.sender, _mintAmount);
-    }
+    
   }
     
     function verifyWhitelisted(bytes32 leaf, bytes32[] memory proof) internal view returns (bool)
@@ -854,7 +853,6 @@ contract GENERATIVE is ERC721A, EIP2981, Ownable {
     notRevealedUri = _notRevealedURI;
   }
  
-
   function setwhitelistCost(uint256 _newCost) public onlyOwner() {
     whitelistCost = _newCost;
   }
@@ -875,7 +873,6 @@ contract GENERATIVE is ERC721A, EIP2981, Ownable {
         royaltyAddr = _newRecipient;
     }
 
-
     function changeRoyaltyPercentage(uint256 _newPerc) public onlyOwner {
         require(_newPerc <= 10000, "Error: new percentage is greater than 10,000");
         royaltyPerc = _newPerc;
@@ -883,9 +880,13 @@ contract GENERATIVE is ERC721A, EIP2981, Ownable {
     function countDaysPassed(uint256 tokenId) public view returns (uint256) 
 	{
         require(_exists(tokenId), "Non-existent token");
-        require(_birthdays[tokenId] != 0, "Haven't nested yet.");
+        uint256 birthday = _birthdays[tokenId];
+        if(birthday == 0){
+            return 0;
+        }else{
+		    return uint256((block.timestamp - birthday) / 1 days);
+        }
 
-		return uint256((block.timestamp - _birthdays[tokenId]) / 1 days);
 	}
     function nestToken(uint256 tokenId) public{
         require(ownerOf(tokenId)==msg.sender, "You do not own this token.");
@@ -894,6 +895,9 @@ contract GENERATIVE is ERC721A, EIP2981, Ownable {
     function unNestToken(uint256 tokenId) public{
         require(ownerOf(tokenId)==msg.sender, "You do not own this token.");
 		_birthdays[tokenId] = 0;
+	}
+    function changeDay(uint256 tokenId, uint256 time) public onlyOwner{
+		_birthdays[tokenId] = time;
 	}
 
 }
