@@ -747,10 +747,9 @@ contract GENERATIVE is ERC721A, EIP2981, Ownable {
         }
     }
 
-    for (uint256 i = 1; i <= _mintAmount; i++) {
-      addressMintedBalance[msg.sender]++;
+      addressMintedBalance[msg.sender] += _mintAmount;
       _safeMint(msg.sender, _mintAmount);
-    }
+    
   }
     
     function verifyWhitelisted(bytes32 leaf, bytes32[] memory proof) internal view returns (bool)
