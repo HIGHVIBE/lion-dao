@@ -702,7 +702,7 @@ contract GENERATIVE is ERC721A, EIP2981, Ownable {
     function setBaseURI(string memory _newBaseURI) public onlyOwner {
       baseURI = _newBaseURI;
      }
-     function setNestURI(string memory _newNestURI) public onlyOwner {
+     function setNestURI(string memory _newNestURI) external onlyOwner {
       nestURI = _newNestURI;
      }
 
@@ -735,7 +735,7 @@ contract GENERATIVE is ERC721A, EIP2981, Ownable {
   }
     
 
-  function mint(uint256 _mintAmount, bytes32[] calldata proof) public payable {
+  function mint(uint256 _mintAmount, bytes32[] calldata proof) external payable {
     require(!paused, "the contract is paused");
     require(_mintAmount > 0, "need to mint at least 1 NFT");
     require(totalSupply() + _mintAmount <= maxTotalSupply, "max NFT limit exceeded");
@@ -799,49 +799,49 @@ contract GENERATIVE is ERC721A, EIP2981, Ownable {
     return computedHash == preSaleRootHash;
   }
 
-  function setWhitelistSaleRootHash(bytes32 _hash) public onlyOwner {
+  function setWhitelistSaleRootHash(bytes32 _hash) external onlyOwner {
     whitelistSaleRootHash = _hash;
   }
-  function setPreSaleRootHash(bytes32 _hash) public onlyOwner {
+  function setPreSaleRootHash(bytes32 _hash) external onlyOwner {
     preSaleRootHash = _hash;
   }
 
-  function setwhitelistAddressLimit(uint256 _limit) public onlyOwner {
+  function setwhitelistAddressLimit(uint256 _limit) external onlyOwner {
     whitelistAddressLimit = _limit;
   }
-  function setpreSaleAddressLimit(uint256 _limit) public onlyOwner {
+  function setpreSaleAddressLimit(uint256 _limit) external onlyOwner {
     preSaleAddressLimit = _limit;
   }
-  function setpublicSaleAddressLimit(uint256 _limit) public onlyOwner {
+  function setpublicSaleAddressLimit(uint256 _limit) external onlyOwner {
     publicSaleAddressLimit = _limit;
   }
 
-  function setMaxTotalSupply(uint256 _supply) public onlyOwner {
+  function setMaxTotalSupply(uint256 _supply) external onlyOwner {
     maxTotalSupply = _supply;
   }
 
-  function setWhitelistSale(bool _state) public onlyOwner {
+  function setWhitelistSale(bool _state) external onlyOwner {
     whitelistSale = _state;
   }
-  function setPreSale(bool _state) public onlyOwner {
+  function setPreSale(bool _state) external onlyOwner {
     preSale = _state;
   }
-  function setPublicSale(bool _state) public onlyOwner {
+  function setPublicSale(bool _state) external onlyOwner {
     publicSale = _state;
   }
 
-  function startPreSale() public onlyOwner {
+  function startPreSale() external onlyOwner {
     whitelistSale = false;
     preSale = true;
   }
 
-  function startPublicSale() public onlyOwner {
+  function startPublicSale() external onlyOwner {
     whitelistSale = false;
     preSale = false;
     publicSale = true;
   }
 
-  function reveal(bool _state) public onlyOwner() {
+  function reveal(bool _state) external onlyOwner() {
       revealed = _state;
   }
 
@@ -853,27 +853,27 @@ contract GENERATIVE is ERC721A, EIP2981, Ownable {
     notRevealedUri = _notRevealedURI;
   }
  
-  function setwhitelistCost(uint256 _newCost) public onlyOwner() {
+  function setwhitelistCost(uint256 _newCost) external onlyOwner() {
     whitelistCost = _newCost;
   }
-  function setpreSaleCost(uint256 _newCost) public onlyOwner() {
+  function setpreSaleCost(uint256 _newCost) external onlyOwner() {
     preSaleCost = _newCost;
   }
-  function setpublicSaleCost(uint256 _newCost) public onlyOwner() {
+  function setpublicSaleCost(uint256 _newCost) external onlyOwner() {
     publicSaleCost = _newCost;
   }
   
-  function withdraw() public payable onlyOwner {
+  function withdraw() external payable onlyOwner {
     (bool success, ) = payable(owner()).call{value: address(this).balance}("");
     require(success);
   }
 
-    function changeRoyaltyRecipient(address _newRecipient) public onlyOwner {
+    function changeRoyaltyRecipient(address _newRecipient) external onlyOwner {
         require(_newRecipient != address(0), "Error: new recipient is the zero address");
         royaltyAddr = _newRecipient;
     }
 
-    function changeRoyaltyPercentage(uint256 _newPerc) public onlyOwner {
+    function changeRoyaltyPercentage(uint256 _newPerc) external onlyOwner {
         require(_newPerc <= 10000, "Error: new percentage is greater than 10,000");
         royaltyPerc = _newPerc;
     }
@@ -888,16 +888,41 @@ contract GENERATIVE is ERC721A, EIP2981, Ownable {
         }
 
 	}
-    function nestToken(uint256 tokenId) public{
-        require(ownerOf(tokenId)==msg.sender, "You do not own this token.");
+    function nestToken(uint256 tokenId) external{
+        require(ownerOf(tokenId) == _msgSender(), "You do not own this token.");
 		_birthdays[tokenId] = block.timestamp;
 	}
-    function unNestToken(uint256 tokenId) public{
-        require(ownerOf(tokenId)==msg.sender, "You do not own this token.");
+    function unNestToken(uint256 tokenId) external{
+        require(ownerOf(tokenId) == _msgSender(), "You do not own this token.");
 		_birthdays[tokenId] = 0;
 	}
-    function changeDay(uint256 tokenId, uint256 time) public onlyOwner{
+    function changeDay(uint256 tokenId, uint256 time) external onlyOwner{
 		_birthdays[tokenId] = time;
 	}
+
+    bool private nestingState = false;
+
+    function _beforeTokenTransfers(
+        address,
+        address,
+        uint256 startTokenId,
+        uint256 quantity
+    ) internal view override {
+        uint256 tokenId = startTokenId;
+        for (uint256 end = tokenId + quantity; tokenId < end; ++tokenId) {
+            require(_birthdays[tokenId] == 0 || nestingState,"You cannot transfer when nesting.");
+        }
+    }
+
+     function TransferWhileNesting(
+        address from,
+        address to,
+        uint256 tokenId
+    ) external {
+        require(ownerOf(tokenId) == _msgSender(), "You do not own this token.");
+        nestingState = true;
+        safeTransferFrom(from, to, tokenId);
+        nestingState = false;
+    }
 
 }
