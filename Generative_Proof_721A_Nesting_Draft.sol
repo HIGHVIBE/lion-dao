@@ -666,7 +666,9 @@ contract GENERATIVE is ERC721A, EIP2981, Ownable {
    using Strings for uint256;
 
     string baseURI;
-    string nestURI;
+    string[] nestURI;
+    uint256[] nestPeriods;
+
     uint256 public maxTotalSupply = 3333;
     uint256 public whitelistCost = 0.0000555 ether;
     uint256 public preSaleCost = 0.0000888 ether;
@@ -685,6 +687,8 @@ contract GENERATIVE is ERC721A, EIP2981, Ownable {
     bytes32 private preSaleRootHash;
 
 
+    event Nested(uint256 indexed tokenId);
+    event Unnested(uint256 indexed tokenId);
 
     constructor(string memory _initNotRevealedUri, string memory _initBaseURI, address _royaltyRecipient, uint256 _royaltyAmount) EIP2981(_royaltyRecipient, _royaltyAmount) ERC721A("GENERATIVE", "GEN") Ownable() {
             setNotRevealedURI(_initNotRevealedUri);
@@ -695,16 +699,24 @@ contract GENERATIVE is ERC721A, EIP2981, Ownable {
      return baseURI;
     }
 
-    function _nestURI() internal view returns (string memory) {
-     return nestURI;
-    }
-
     function setBaseURI(string memory _newBaseURI) public onlyOwner {
       baseURI = _newBaseURI;
      }
-     function setNestURI(string memory _newNestURI) external onlyOwner {
+
+    function setNestURI(string[] memory _newNestURI) public onlyOwner {
       nestURI = _newNestURI;
      }
+
+    function setNestPeriods(uint256[] memory _newNestPeriods) public onlyOwner {
+      nestPeriods = _newNestPeriods;
+     }
+
+    function getNestURI(uint256 index) internal view returns (string memory) {
+        return nestURI[index];
+    }
+    function getNestPeriod(uint256 index) internal view returns (uint256) {
+        return nestPeriods[index];
+    }
 
     function supportsInterface(bytes4 _interfaceId) public view virtual override(ERC721A, EIP2981) returns (bool) {
         return super.supportsInterface(_interfaceId);
@@ -721,17 +733,21 @@ contract GENERATIVE is ERC721A, EIP2981, Ownable {
         return notRevealedUri;
     }
     uint256 dayCount = countDaysPassed(tokenId);
-    if(dayCount >= 30) {
-        string memory currentBaseURI = _nestURI();
-        return bytes(currentBaseURI).length > 0
-        ? string(abi.encodePacked(currentBaseURI, tokenId.toString(), ".json"))
-        : "";
-    }else{
-        string memory currentBaseURI = _baseURI();
-        return bytes(currentBaseURI).length > 0
-        ? string(abi.encodePacked(currentBaseURI, tokenId.toString(), ".json"))
-        : "";
+    string memory currentBaseURI;
+    uint256 periodCount;
+    for(uint256 i = 0; i < nestPeriods.length; i++){
+         if(dayCount >= getNestPeriod(i)){
+             periodCount = i;
+         }
     }
+    if(dayCount != 0){
+        currentBaseURI = getNestURI(periodCount);
+    }else{
+        currentBaseURI = _baseURI();
+    }
+    return bytes(currentBaseURI).length > 0
+        ? string(abi.encodePacked(currentBaseURI, tokenId.toString(), ".json"))
+        : "";
   }
     
 
@@ -891,10 +907,12 @@ contract GENERATIVE is ERC721A, EIP2981, Ownable {
     function nestToken(uint256 tokenId) external{
         require(ownerOf(tokenId) == _msgSender(), "You do not own this token.");
 		_birthdays[tokenId] = block.timestamp;
+        emit Nested(tokenId);
 	}
     function unNestToken(uint256 tokenId) external{
         require(ownerOf(tokenId) == _msgSender(), "You do not own this token.");
 		_birthdays[tokenId] = 0;
+        emit Unnested(tokenId);
 	}
     function changeDay(uint256 tokenId, uint256 time) external onlyOwner{
 		_birthdays[tokenId] = time;
