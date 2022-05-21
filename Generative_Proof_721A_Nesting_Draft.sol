@@ -756,23 +756,23 @@ contract GENERATIVE is ERC721A, EIP2981, Ownable {
     require(_mintAmount > 0, "need to mint at least 1 NFT");
     require(totalSupply() + _mintAmount <= maxTotalSupply, "max NFT limit exceeded");
     require(msg.value >= whitelistCost * _mintAmount, "Not enough ETH sent: check whitelist price.");
+    require(msg.sender == tx.origin, "caller should not be a contract.");
+
+    uint256 ownerMintedCount = _numberMinted(msg.sender);
 
 
     if (msg.sender != owner()) {
         if(whitelistSale) {
             require(verifyWhitelisted(keccak256(abi.encodePacked(msg.sender)), proof), "User is not whitelisted!");
-            uint256 ownerMintedCount = _numberMinted(msg.sender);
             require(ownerMintedCount + _mintAmount <= whitelistAddressLimit, "max NFT per whitelist address exceeded");
             require(msg.value >= whitelistCost * _mintAmount, "Not enough ETH sent: check whitelist price.");
         } 
         if(preSale){
             require(verifyPreSaleListed(keccak256(abi.encodePacked(msg.sender)), proof), "User is not presalelisted!");
-            uint256 ownerMintedCount = _numberMinted(msg.sender);
-            require(ownerMintedCount + _mintAmount <= preSaleAddressLimit, "max NFT per prelist address exceeded");
+            require(ownerMintedCount + _mintAmount <= preSaleAddressLimit, "max NFT per preSalelist address exceeded");
             require(msg.value >= preSaleCost * _mintAmount, "Not enough ETH sent: check presale price.");
         }
         if(publicSale){
-            uint256 ownerMintedCount = _numberMinted(msg.sender);
             require(ownerMintedCount + _mintAmount <= publicSaleAddressLimit, "max NFT per address exceeded");
             require(msg.value >= publicSaleCost * _mintAmount, "Not enough ETH sent: check public price.");
         }
