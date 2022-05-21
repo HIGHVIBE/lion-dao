@@ -677,8 +677,8 @@ contract GENERATIVE is ERC721A, EIP2981, Ownable {
     bool public revealed = false;
     string public notRevealedUri;
     uint256 public whitelistAddressLimit = 1;
-    uint256 public preSaleAddressLimit = 1;
-    uint256 public publicSaleAddressLimit = 1;
+    uint256 public preSaleAddressLimit = 2;
+    uint256 public publicSaleAddressLimit = 5;
     bool public whitelistSale = true;
     bool public preSale = false;
     bool public publicSale = false;
