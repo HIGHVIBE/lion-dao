@@ -749,7 +749,9 @@ contract GENERATIVE is ERC721A, EIP2981, Ownable {
         ? string(abi.encodePacked(currentBaseURI, tokenId.toString(), ".json"))
         : "";
   }
-    
+    function addressMintCount(address mintAddress) external view returns (uint256) {
+        return _numberMinted(mintAddress);
+    }
 
   function mint(uint256 _mintAmount, bytes32[] calldata proof) external payable {
     require(!paused, "the contract is paused");
