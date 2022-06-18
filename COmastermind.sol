@@ -1109,7 +1109,7 @@ contract COmastermind is ERC1155, EIP2981, Ownable  {
     string public symbol = "CO";
     uint256 public currentSupply = 0;
     uint256 public maxTotalSupply = 186;
-    uint256 public noOfIds;
+    uint256 private noOfIds;
 
     constructor(address _royaltyRecipient, uint256 _royaltyAmount) EIP2981(_royaltyRecipient, _royaltyAmount) 
         ERC1155("ipfs://QmV1ixC6m8k3e1kNX7RMfpBe9rrinVbvAK4XVguwwQ4BQy/") Ownable() {}
