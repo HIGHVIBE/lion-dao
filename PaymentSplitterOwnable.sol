@@ -19,24 +19,13 @@ contract PaymentSplitterOwnable is Ownable {
     uint256 noOfShareholders;
     uint256 public _totalReleased;
   
-    constructor(address[] memory payees, uint8[] memory shares_) payable {
-        require(payees.length == shares_.length, "PaymentSplitter: payees and shares length mismatch");
-        require(payees.length > 0, "PaymentSplitter: no payees");
-        
-        for (uint256 i = 0; i < payees.length; i++) {
-            addShareholder(payees[i], shares_[i]);
-        }
+    constructor(address[] memory shareholdersArr, uint8[] memory shares) payable {
+        editShareholders(shareholdersArr, shares);
     }
 
     receive() external payable virtual {
         emit PaymentReceived(_msgSender(), msg.value);
-        uint256 sharesTotal;
-        for(uint256 i = 0; i < noOfShareholders; i++){
-            sharesTotal += shareholders[i+1].share;
-        }
-        if(sharesTotal == 100){ // what if get payment while editing shareholders
-            release(); 
-        } 
+        release(); 
     }
 
     function release() private{
@@ -52,44 +41,29 @@ contract PaymentSplitterOwnable is Ownable {
         }
     }
 
-    function addShareholder(address _addr, uint8 _share) public onlyOwner {
+    function addShareholder(address _addr, uint8 _share) private onlyOwner {
         require(_addr != address(0), "PaymentSplitter: account is the zero address");
         require(_share > 0, "PaymentSplitter: shares are 0");
         noOfShareholders += 1;
         shareholders[noOfShareholders] = Shareholder(_addr, _share, 0);
     }
 
-    function editShareholder(address addr, uint8 share) external onlyOwner {
-        uint256 idx;
-        for(uint256 i = 0; i < noOfShareholders; i++){
-            if(shareholders[i + 1].addr == addr) idx = i + 1;
-        }
-        if (idx == 0) revert("No shareholder with given address was found");
-        Shareholder storage sh = shareholders[idx];
-        sh.share = share;
-    }
-
-    function deleteShareholder(address addr) external onlyOwner {
-        uint256 idx;
-        for(uint256 i = 0; i < noOfShareholders; i++){
-            if(shareholders[i + 1].addr == addr) idx = i + 1;
-        }
-        if (idx == 0) revert("No shareholder with given address was found");
-        for(uint256 i = idx; i < noOfShareholders; i++){
-            shareholders[i] = shareholders[i + 1];
-        }
-        delete shareholders[noOfShareholders];
-        noOfShareholders -= 1;
-    }
-
-    function releaseAsOwner() external onlyOwner {
+    function editShareholders(address[] memory shareholdersArr, uint8[] memory shares) public onlyOwner {
+        uint256 oldShareholdersNo = noOfShareholders;
+        noOfShareholders = 0;
+        require(shareholdersArr.length == shares.length, "PaymentSplitter: shareholdersArr and shares length mismatch");
+        require(shareholdersArr.length > 0, "PaymentSplitter: no shareholdersArr");
         uint256 sharesTotal;
-        for(uint256 i = 0; i < noOfShareholders; i++){
-            sharesTotal += shareholders[i+1].share;
+        for (uint256 i = 0; i < shareholdersArr.length; i++) {
+            addShareholder(shareholdersArr[i], shares[i]);
+            sharesTotal += shares[i];
         }
-        if(sharesTotal == 100){ // what if get payment while editing shareholders
-            release(); 
-        } 
+        require(sharesTotal == 100, "Total should be hundred");
+        if(noOfShareholders < oldShareholdersNo){
+            for(uint i = noOfShareholders + 1; i <= oldShareholdersNo; i ++){
+                delete shareholders[i];
+            }
+        }
     }
 
 }
