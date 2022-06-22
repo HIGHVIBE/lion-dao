@@ -1,4 +1,3 @@
-
 // SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.15;
@@ -16,14 +15,16 @@ contract PaymentSplitter is Context {
     mapping(address => uint256) public _shares;
     mapping(address => uint256) public _released;
     address[] public _payees;
-  
-    constructor(address[] memory payees, uint256[] memory shares_) payable {
-        require(payees.length == shares_.length, "PaymentSplitter: payees and shares length mismatch");
+
+    constructor(address[] memory payees, uint256[] memory shares) payable {
+        require(payees.length == shares.length, "PaymentSplitter: payees and shares length mismatch");
         require(payees.length > 0, "PaymentSplitter: no payees");
-        
+        uint256 sharesTotal;
         for (uint256 i = 0; i < payees.length; i++) {
-            _addPayee(payees[i], shares_[i]);
+            _addPayee(payees[i], shares[i]);
+            sharesTotal += shares[i];
         }
+        require(sharesTotal == 100, "Shares total should be equal to 100");
     }
 
     receive() external payable virtual {
@@ -45,13 +46,13 @@ contract PaymentSplitter is Context {
         
     }
 
-     function _addPayee(address account, uint256 shares_) private {
+     function _addPayee(address account, uint256 shares) private {
         require(account != address(0), "PaymentSplitter: account is the zero address");
-        require(shares_ > 0, "PaymentSplitter: shares are 0");
+        require(shares > 0, "PaymentSplitter: shares are 0");
         require(_shares[account] == 0, "PaymentSplitter: account already has shares");
 
         _payees.push(account);
-        _shares[account] = shares_;
+        _shares[account] = shares;
     }
 
 }
