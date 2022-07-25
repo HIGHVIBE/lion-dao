@@ -668,7 +668,7 @@ contract ERC721A is Context, ERC165, IERC721, IERC721Metadata {
     ) internal virtual {}
 }
 
-contract Genesis is ERC721A, EIP2981, Ownable {
+contract GENESIS is ERC721A, EIP2981, Ownable {
    using Strings for uint256;
 
     string[] levelURI;
@@ -701,7 +701,7 @@ contract Genesis is ERC721A, EIP2981, Ownable {
     constructor(string memory _initNotRevealedUri, bytes32 _stage1RootHash,
         uint256[] memory _levelPeriods, string[] memory _levelURI,
         bytes32 _stage2RootHash, address _royaltyRecipient, uint256 _royaltyAmount) 
-        EIP2981(_royaltyRecipient, _royaltyAmount) ERC721A("GENERATIVE", "GEN") Ownable() {
+        EIP2981(_royaltyRecipient, _royaltyAmount) ERC721A("Lion DAO Genesis", "GEN") Ownable() {
 
         notRevealedUri = _initNotRevealedUri;
         stage1RootHash = _stage1RootHash;
