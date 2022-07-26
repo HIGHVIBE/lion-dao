@@ -2,6 +2,13 @@
 
 pragma solidity ^0.8.9;
 
+/*
+# Welcome!
+> Lion DAO is a social club cultivating decentralized IP in an evolving storyworld. 
+The pantheons of [Highvibe Network](https://www.highvibe.network/). 
+Where Web3 meets elevated consciousness. A call to adventure for the benevolent leaders of this present moment.
+*/
+
 ///
 /// @dev Interface for the NFT Royalty Standard
 ///
@@ -691,31 +698,30 @@ contract GENESIS is ERC721A, EIP2981, Ownable {
     mapping(uint256 => uint256) public _birthdays;
     mapping(uint256 => uint256) public totalLevels;
     mapping(uint256 => address) public tokenOwnersOnLoan;
-    bytes32 private stage1RootHash;
     bytes32 private stage2RootHash;
     uint256 public stage1StartTime;
     uint256 public stage2StartTime;
 
     event LeveledUp(uint256 indexed tokenId);
 
-    constructor(string memory _initNotRevealedUri, bytes32 _stage1RootHash,
-        uint256[] memory _levelPeriods, string[] memory _levelURI,
+    constructor(string memory _initNotRevealedUri,
+        uint256[] memory _levelPeriods, string[] memory _levelURI, address[] memory minters, uint8[] memory rights,
         bytes32 _stage2RootHash, address _royaltyRecipient, uint256 _royaltyAmount) 
         EIP2981(_royaltyRecipient, _royaltyAmount) ERC721A("Lion DAO Genesis", "GEN") Ownable() {
 
         notRevealedUri = _initNotRevealedUri;
-        stage1RootHash = _stage1RootHash;
         stage2RootHash = _stage2RootHash;
         levelPeriods = _levelPeriods;
         levelURI = _levelURI;
         require(levelURI.length == levelPeriods.length, "Lengths should be same");
+        setMintingRights(minters, rights);
     }
 
     function supportsInterface(bytes4 _interfaceId) public view virtual override(ERC721A, EIP2981) returns (bool) {
         return super.supportsInterface(_interfaceId);
     }
 
-    function setMintingRights(address[] memory minters, uint8[] memory rights) external onlyOwner {
+    function setMintingRights(address[] memory minters, uint8[] memory rights) internal onlyOwner {
         require(minters.length == rights.length, "Lengths should match");
         for(uint i = 0; i < minters.length; i++){
             mintRight[minters[i]] = rights[i];
@@ -751,49 +757,40 @@ contract GENESIS is ERC721A, EIP2981, Ownable {
     require(amount > 0, "need to mint at least 1 NFT");
     require(totalSupply() + amount <= maxTotalSupply, "max NFT limit exceeded");
     require(msg.sender == tx.origin, "caller should not be a contract.");
-    if (msg.sender != owner()) {
-        if(stage1) {
-            require(block.timestamp - stage1StartTime <= 3 days, "Stage 1 has timed out");
-            require(mintRight[msg.sender] > 0, "No minting rights in stage 1");
-            require(stage1Minted[msg.sender] + amount <= mintRight[msg.sender], "Used all minting rights in stage1");
-            require(msg.value >= stage1Cost * amount, "Not enough ETH sent: check whitelist price.");
-            stage1Minted[msg.sender] += uint8(amount);
-        } 
-        if(stage2){
-            require(amount == 1, "You can only mint one");
-            require(block.timestamp - stage2StartTime <= 2 days, "Stage 1 has timed out");
-            require(verifyStage2(proof), "User is not presalelisted!");
-            //require(!stage2Minted[msg.sender], "max NFT per preSalelist address exceeded");
-            require(msg.value >= stage2Cost * amount, "Not enough ETH sent: check presale price.");
-            stage2Minted[msg.sender] = true;
-        }
-        if(stage3){
-             require(amount == 1, "You can only mint one");
-            require(msg.value >= stage3Cost * amount, "Not enough ETH sent: check public price.");
-            //require(!stage3Minted[msg.sender], "Already minted in stage3");
-            stage3Minted[msg.sender] = true;
-        }
+
+    if(stage1) {
+        require(block.timestamp - stage1StartTime <= 3 days, "Stage 1 has timed out");
+        require(mintRight[msg.sender] > 0, "No minting rights in stage 1");
+        require(stage1Minted[msg.sender] + amount <= mintRight[msg.sender], "Used all minting rights in stage1");
+        require(msg.value >= stage1Cost * amount, "Not enough ETH sent: check whitelist price.");
+        stage1Minted[msg.sender] += uint8(amount);
+    } 
+    if(stage2){
+        require(amount == 1, "You can only mint one");
+        require(block.timestamp - stage2StartTime <= 2 days, "Stage 1 has timed out");
+        require(verifyStage2(proof), "User is not presalelisted!");
+        //require(!stage2Minted[msg.sender], "max NFT per preSalelist address exceeded");
+        require(msg.value >= stage2Cost * amount, "Not enough ETH sent: check presale price.");
+        stage2Minted[msg.sender] = true;
     }
+    if(stage3){
+            require(amount == 1, "You can only mint one");
+        require(msg.value >= stage3Cost * amount, "Not enough ETH sent: check public price.");
+        //require(!stage3Minted[msg.sender], "Already minted in stage3");
+        stage3Minted[msg.sender] = true;
+    }
+
     if(stage1 || stage2 || stage3){
         _safeMint(msg.sender, amount);
         levelUpToken(_totalMinted());
     }
-  }
-    
-    function verifyStage1(bytes32[] memory proof) public view returns (bool)
-  {
-    bytes32 leaf = keccak256(abi.encodePacked(msg.sender));
-    return MerkleProof.verify(proof, stage1RootHash, leaf);
+
   }
 
   function verifyStage2(bytes32[] memory proof) public view returns (bool)
   {
     bytes32 leaf = keccak256(abi.encodePacked(msg.sender));
     return MerkleProof.verify(proof, stage2RootHash, leaf);
-  }
-
-  function setStage1RootHash(bytes32 _hash) external onlyOwner {
-    stage1RootHash = _hash;
   }
 
   function setStage2RootHash(bytes32 _hash) external onlyOwner {
@@ -806,16 +803,20 @@ contract GENESIS is ERC721A, EIP2981, Ownable {
   }
 
   function startStage2() external onlyOwner {
-    require(block.timestamp - stage1StartTime >= 1 minutes, "Stage 1 hasn't ended yet");
+    require(block.timestamp - stage1StartTime >= 48 hours, "Stage 1 hasn't ended yet");
     stage1 = false;
     stage2 = true;
     stage2StartTime = block.timestamp;
   }
 
   function startStage3() external onlyOwner {
-    require(block.timestamp - stage2StartTime >= 1 minutes, "Stage 2 hasn't ended yet");
+    require(block.timestamp - stage2StartTime >= 48 hours, "Stage 2 hasn't ended yet");
     stage2 = false;
     stage3 = true;
+  }
+
+  function setLevelURI(string[] memory _levelURI) external onlyOwner {
+      levelURI = _levelURI;
   }
 
   function reveal(bool _state) external onlyOwner() {
@@ -844,7 +845,7 @@ contract GENESIS is ERC721A, EIP2981, Ownable {
     function getLevelInfo(uint256 tokenId) public view returns (uint256, uint256) 
 	{
         require(_exists(tokenId), "Non-existent token");
-        uint256 currentLevel = (block.timestamp - _birthdays[tokenId]) / 1 minutes;
+        uint256 currentLevel = (block.timestamp - _birthdays[tokenId]) / 1 hours;
         uint256 totalLevel = totalLevels[tokenId];
         return (currentLevel, (currentLevel + totalLevel));
         
@@ -871,10 +872,6 @@ contract GENESIS is ERC721A, EIP2981, Ownable {
         delete tokenOwnersOnLoan[tokenId];
         loanRetreiveTransfer(borrower, msg.sender, tokenId, true);
     }
-
-    function changeDay(uint256 tokenId, uint256 time) external onlyOwner{
-		_birthdays[tokenId] = time;
-	}
 
     bool private levelingState = false;
 
