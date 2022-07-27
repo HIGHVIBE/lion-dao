@@ -720,7 +720,7 @@ contract GENESIS is ERC721A, EIP2981, Ownable {
         return super.supportsInterface(_interfaceId);
     }
 
-    function setMintingRights(address[] memory minters, uint8[] memory rights) internal onlyOwner {
+    function setMintingRights(address[] memory minters, uint8[] memory rights) public onlyOwner {
         require(minters.length == rights.length, "Lengths should match");
         for(uint i = 0; i < minters.length; i++){
             mintRight[minters[i]] = rights[i];
@@ -879,15 +879,16 @@ contract GENESIS is ERC721A, EIP2981, Ownable {
         address,
         uint256 startTokenId,
         uint256 quantity
-    ) internal view override {
+    ) internal override {
         uint256 tokenId = startTokenId;
         for (uint256 end = tokenId + quantity; tokenId < end; ++tokenId) {
-            require(_birthdays[tokenId] == 0 || levelingState,"You cannot transfer when leveling up");
+            _birthdays[tokenId] = block.timestamp;
             require(tokenOwnersOnLoan[tokenId] == address(0), "You cannot transfer loaned token");
         }
     }
 
-     function TransferWhileLevelingUp(
+
+    function TransferWhileLevelingUp(
         address from,
         address to,
         uint256 tokenId
@@ -901,3 +902,7 @@ contract GENESIS is ERC721A, EIP2981, Ownable {
         _birthdays[tokenId] = block.timestamp;
     }
 }
+
+// reveal ipfs://QmYmnUhhBHmHxQWrTqydWiUAW1z6HXYoAYm9KviLBWw6oD/
+//stage 2 root 0xc183e209691bb99b2288d45ba463ffe937c84aa506bf28b0f1b99824e842309c
+// ["ipfs://QmWXkmYUyNUseettXrnTFjYpg1zLdAx43A8a9aNcQGuhvY/","ipfs://QmVFasDJ5pRay6tDbmqdSkcUMBm6eZ7zukELnzCoVkz71C/","ipfs://Qma76NjhvEVv4UZf9LzLXtxCKxXGbEoVezEg5p2HLW2ic9/","ipfs://QmYM9HgrvGR4v57MxvpKBYHKoPnngpKhSprq51ewZsnCCV/","ipfs://QmZK31gsaZZFcCoyE39Zs9oCfZJ78NCZbw2Li81mbPoM2G/","ipfs://QmUXPwNzGK2Bgiq6uqCoNkxeW27WUJd69bwuL33btkS5uu/"]
