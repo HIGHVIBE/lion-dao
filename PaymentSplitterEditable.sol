@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.15;
+pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract PaymentSplitterOwnable is Ownable {
+contract PaymentSplitterEditable is Ownable {
     event PaymentReleased(address to, uint256 amount);
     event PaymentReceived(address from, uint256 amount);
 
@@ -17,10 +18,11 @@ contract PaymentSplitterOwnable is Ownable {
 
     mapping(uint256 => Shareholder) public shareholders;
     uint256 noOfShareholders;
-    uint256 public _totalReleased;
+    IERC20 token;
   
-    constructor(address[] memory shareholdersArr, uint8[] memory shares) payable {
+    constructor(address[] memory shareholdersArr, uint8[] memory shares, IERC20 _token) payable {
         editShareholders(shareholdersArr, shares);
+        token = _token;
     }
 
     receive() external payable virtual {
@@ -30,15 +32,33 @@ contract PaymentSplitterOwnable is Ownable {
 
     function release() private{
         uint256 received = address(this).balance;
-
         for (uint256 i = 0; i < noOfShareholders; i++) {
             Shareholder storage sh = shareholders[i + 1];
             uint256 payment = received * uint256(sh.share) / 100;
             sh.released += payment;
-            _totalReleased += payment;
             Address.sendValue(payable(sh.addr), payment);
             emit PaymentReleased(sh.addr, payment);
         }
+    }
+
+    function releaseToken(IERC20 _token) external onlyOwner {
+        uint256 receivedToken = IERC20(_token).balanceOf(address(this));
+        for (uint256 i = 0; i < noOfShareholders; i++) {
+            Shareholder storage sh = shareholders[i + 1];
+            uint256 tokenPayment = receivedToken * uint256(sh.share) / 100;
+            emit PaymentReleased(sh.addr, tokenPayment);
+            IERC20(_token).transferFrom(address(this), sh.addr, tokenPayment);
+        } 
+    }
+
+    function releaseToken() external onlyOwner {
+        uint256 receivedToken = token.balanceOf(address(this));
+        for (uint256 i = 0; i < noOfShareholders; i++) {
+            Shareholder storage sh = shareholders[i + 1];
+            uint256 tokenPayment = receivedToken * uint256(sh.share) / 100;
+            emit PaymentReleased(sh.addr, tokenPayment);
+            token.transferFrom(address(this), sh.addr, tokenPayment);
+        } 
     }
 
     function addShareholder(address _addr, uint8 _share) private onlyOwner {
@@ -64,6 +84,26 @@ contract PaymentSplitterOwnable is Ownable {
                 delete shareholders[i];
             }
         }
+    }
+
+    function changeToken(IERC20 _token) external onlyOwner {
+        token = _token;
+    }
+
+    function getTokenBalance() public view returns(uint256){
+        return token.balanceOf(address(this));
+    }
+
+    function getTokenBalance(IERC20 _token) external view returns(uint256){
+        return _token.balanceOf(address(this));
+    }
+
+    function withdrawEther() external onlyOwner {
+        payable(owner()).transfer(address(this).balance);
+    }
+
+    function withdrawToken() external onlyOwner {
+        token.transferFrom(address(this), owner(), token.balanceOf(address(this)));
     }
 
 }
