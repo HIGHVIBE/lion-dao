@@ -705,13 +705,12 @@ contract GENESIS is ERC721A, EIP2981, Ownable {
     event LeveledUp(uint256 indexed tokenId);
 
     constructor(string memory _initNotRevealedUri,
-        uint256[] memory _levelPeriods, string[] memory _levelURI, address[] memory minters, uint8[] memory rights,
-        bytes32 _stage2RootHash, address _royaltyRecipient, uint256 _royaltyAmount) 
+        string[] memory _levelURI, address[] memory minters, uint8[] memory rights,
+        address _royaltyRecipient, uint256 _royaltyAmount) 
         EIP2981(_royaltyRecipient, _royaltyAmount) ERC721A("Lion DAO Genesis", "GEN") Ownable() {
-
         notRevealedUri = _initNotRevealedUri;
-        stage2RootHash = _stage2RootHash;
-        levelPeriods = _levelPeriods;
+        stage2RootHash = 0x8c5bb93bd602ba4a658014f1ed149f07bb2bb61224200741908bf604636117d7;
+        levelPeriods = [0,30,60,90,120,300];
         levelURI = _levelURI;
         require(levelURI.length == levelPeriods.length, "Lengths should be same");
         setMintingRights(minters, rights);
@@ -759,7 +758,7 @@ contract GENESIS is ERC721A, EIP2981, Ownable {
     require(msg.sender == tx.origin, "caller should not be a contract.");
 
     if(stage1) {
-        require(block.timestamp - stage1StartTime <= 3 days, "Stage 1 has timed out");
+        require(block.timestamp - stage1StartTime <= 2 days, "Stage 1 has timed out");
         require(mintRight[msg.sender] > 0, "No minting rights in stage 1");
         require(stage1Minted[msg.sender] + amount <= mintRight[msg.sender], "Used all minting rights in stage1");
         require(msg.value >= stage1Cost * amount, "Not enough ETH sent: check whitelist price.");
@@ -769,14 +768,14 @@ contract GENESIS is ERC721A, EIP2981, Ownable {
         require(amount == 1, "You can only mint one");
         require(block.timestamp - stage2StartTime <= 2 days, "Stage 1 has timed out");
         require(verifyStage2(proof), "User is not presalelisted!");
-        //require(!stage2Minted[msg.sender], "max NFT per preSalelist address exceeded");
+        require(!stage2Minted[msg.sender], "max NFT per preSalelist address exceeded");
         require(msg.value >= stage2Cost * amount, "Not enough ETH sent: check presale price.");
         stage2Minted[msg.sender] = true;
     }
     if(stage3){
-            require(amount == 1, "You can only mint one");
+        require(amount == 1, "You can only mint one");
         require(msg.value >= stage3Cost * amount, "Not enough ETH sent: check public price.");
-        //require(!stage3Minted[msg.sender], "Already minted in stage3");
+        require(!stage3Minted[msg.sender], "Already minted in stage3");
         stage3Minted[msg.sender] = true;
     }
 
@@ -845,7 +844,7 @@ contract GENESIS is ERC721A, EIP2981, Ownable {
     function getLevelInfo(uint256 tokenId) public view returns (uint256, uint256) 
 	{
         require(_exists(tokenId), "Non-existent token");
-        uint256 currentLevel = (block.timestamp - _birthdays[tokenId]) / 1 hours;
+        uint256 currentLevel = (block.timestamp - _birthdays[tokenId]) / 1 days;
         uint256 totalLevel = totalLevels[tokenId];
         return (currentLevel, (currentLevel + totalLevel));
         
