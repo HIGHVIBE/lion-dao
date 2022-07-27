@@ -1,22 +1,22 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.15;
+pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
+import "@openzeppelin/contracts/access/Ownable.sol"; 
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-
-contract PaymentSplitter is Context {
+contract PaymentSplitter is Context, Ownable {
     event PaymentReleased(address to, uint256 amount);
     event PaymentReceived(address from, uint256 amount);
 
-    uint256 public _totalReleased;
+    IERC20 public token;
 
     mapping(address => uint256) public _shares;
-    mapping(address => uint256) public _released;
     address[] public _payees;
 
-    constructor(address[] memory payees, uint256[] memory shares) payable {
+    constructor(address[] memory payees, uint256[] memory shares, IERC20 _token) payable {
         require(payees.length == shares.length, "PaymentSplitter: payees and shares length mismatch");
         require(payees.length > 0, "PaymentSplitter: no payees");
         uint256 sharesTotal;
@@ -25,6 +25,7 @@ contract PaymentSplitter is Context {
             sharesTotal += shares[i];
         }
         require(sharesTotal == 100, "Shares total should be equal to 100");
+        token = _token;
     }
 
     receive() external payable virtual {
@@ -34,16 +35,32 @@ contract PaymentSplitter is Context {
 
     function release() private{
         uint256 received = address(this).balance;
-
         for (uint256 i = 0; i < _payees.length; i++) {
             address account = _payees[i];
             uint256 payment = received * _shares[account] / 100;
-            _released[_payees[i]] += payment;
-            _totalReleased += payment;
             Address.sendValue(payable(account), payment);
             emit PaymentReleased(account, payment);
-        }
-        
+        } 
+    }
+
+    function releaseToken() external onlyOwner {
+        uint256 receivedToken = token.balanceOf(address(this));
+        for (uint256 i = 0; i < _payees.length; i++) {
+            address account = _payees[i];
+            uint256 tokenPayment = receivedToken * _shares[account] / 100;
+            emit PaymentReleased(account, tokenPayment);
+            token.transferFrom(address(this), account, tokenPayment);
+        } 
+    }
+
+    function releaseToken(IERC20 _token) external onlyOwner {
+        uint256 receivedToken = IERC20(_token).balanceOf(address(this));
+        for (uint256 i = 0; i < _payees.length; i++) {
+            address account = _payees[i];
+            uint256 tokenPayment = receivedToken * _shares[account] / 100;
+            emit PaymentReleased(account, tokenPayment);
+            IERC20(_token).transferFrom(address(this), account, tokenPayment);
+        } 
     }
 
      function _addPayee(address account, uint256 shares) private {
@@ -53,6 +70,26 @@ contract PaymentSplitter is Context {
 
         _payees.push(account);
         _shares[account] = shares;
+    }
+
+    function changeToken(IERC20 _token) external onlyOwner {
+        token = _token;
+    }
+
+    function getTokenBalance() external view returns(uint256){
+        return token.balanceOf(address(this));
+    }
+
+    function getTokenBalance(IERC20 _token) external view returns(uint256){
+        return _token.balanceOf(address(this));
+    }
+
+    function withdrawEther() external onlyOwner {
+        payable(owner()).transfer(address(this).balance);
+    }
+
+    function withdrawToken() external onlyOwner {
+        token.transferFrom(address(this), owner(), token.balanceOf(address(this)));
     }
 
 }
