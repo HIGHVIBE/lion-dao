@@ -902,7 +902,3 @@ contract GENESIS is ERC721A, EIP2981, Ownable {
         _birthdays[tokenId] = block.timestamp;
     }
 }
-
-// reveal ipfs://QmYmnUhhBHmHxQWrTqydWiUAW1z6HXYoAYm9KviLBWw6oD/
-//stage 2 root 0xc183e209691bb99b2288d45ba463ffe937c84aa506bf28b0f1b99824e842309c
-// ["ipfs://QmWXkmYUyNUseettXrnTFjYpg1zLdAx43A8a9aNcQGuhvY/","ipfs://QmVFasDJ5pRay6tDbmqdSkcUMBm6eZ7zukELnzCoVkz71C/","ipfs://Qma76NjhvEVv4UZf9LzLXtxCKxXGbEoVezEg5p2HLW2ic9/","ipfs://QmYM9HgrvGR4v57MxvpKBYHKoPnngpKhSprq51ewZsnCCV/","ipfs://QmZK31gsaZZFcCoyE39Zs9oCfZJ78NCZbw2Li81mbPoM2G/","ipfs://QmUXPwNzGK2Bgiq6uqCoNkxeW27WUJd69bwuL33btkS5uu/"]
